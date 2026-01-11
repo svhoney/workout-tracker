@@ -680,9 +680,14 @@ function calculateStreak() {
 // Exercises Screen
 // ==========================================
 
+let filterTabsInitialized = false;
+
 function initExercisesScreen() {
   renderExerciseList();
-  setupFilterTabs();
+  if (!filterTabsInitialized) {
+    setupFilterTabs();
+    filterTabsInitialized = true;
+  }
 }
 
 function setupFilterTabs() {
@@ -1027,10 +1032,10 @@ function updateChart() {
           value = isCardio ? 0 : Math.max(...exercise.sets.map(s => s.weight || 0));
           break;
         case 'volume':
-          value = isCardio ? 0 : exercise.sets.reduce((sum, s) => sum + (s.reps * (s.weight || 1)), 0);
+          value = isCardio ? 0 : exercise.sets.reduce((sum, s) => sum + ((s.reps || 0) * (s.weight || 0)), 0);
           break;
         case 'reps':
-          value = isCardio ? 0 : exercise.sets.reduce((sum, s) => sum + s.reps, 0);
+          value = isCardio ? 0 : exercise.sets.reduce((sum, s) => sum + (s.reps || 0), 0);
           break;
         case 'duration':
           value = exercise.sets.reduce((sum, s) => sum + (s.duration || 0), 0);
