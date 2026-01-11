@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Workout Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <h1 id="page-title">Today's Workout</h1>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="content">
+            <!-- Today Screen -->
+            <section id="today-screen" class="screen active">
+                <div id="no-workout" class="empty-state">
+                    <p>No workout started</p>
+                    <button class="btn btn-primary" onclick="startWorkout()">Start Workout</button>
+                </div>
+                <div id="current-workout" class="workout-container" style="display: none;">
+                    <div id="workout-exercises"></div>
+                    <div class="workout-actions">
+                        <button class="btn btn-secondary" onclick="showAddExercise()">+ Add Exercise</button>
+                        <button class="btn btn-timer" onclick="showTimer()">Rest Timer</button>
+                    </div>
+                    <button class="btn btn-primary" onclick="finishWorkout()">Finish Workout</button>
+                </div>
+            </section>
+
+            <!-- Exercises Library Screen -->
+            <section id="exercises-screen" class="screen">
+                <div class="filter-tabs">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="weight">Weights</button>
+                    <button class="filter-btn" data-filter="cardio">Cardio</button>
+                    <button class="filter-btn" data-filter="bodyweight">Bodyweight</button>
+                </div>
+                <div id="exercise-list" class="exercise-list"></div>
+                <button class="btn btn-primary fab" onclick="showCreateExercise()">+</button>
+            </section>
+
+            <!-- History Screen -->
+            <section id="history-screen" class="screen">
+                <div id="history-list" class="history-list"></div>
+            </section>
+
+            <!-- Progress Screen -->
+            <section id="progress-screen" class="screen">
+                <div class="progress-controls">
+                    <select id="exercise-select" onchange="updateChart()">
+                        <option value="">Select Exercise</option>
+                    </select>
+                    <select id="metric-select" onchange="updateChart()">
+                        <option value="weight">Max Weight</option>
+                        <option value="volume">Total Volume</option>
+                        <option value="reps">Total Reps</option>
+                    </select>
+                </div>
+                <div class="chart-container">
+                    <canvas id="progress-chart"></canvas>
+                </div>
+                <div id="progress-stats" class="stats-container"></div>
+            </section>
+        </main>
+
+        <!-- Rest Timer -->
+        <div id="rest-timer" class="rest-timer hidden">
+            <div class="timer-display">
+                <span id="timer-minutes">01</span>:<span id="timer-seconds">30</span>
+            </div>
+            <div class="timer-controls">
+                <button class="timer-btn" onclick="adjustTimer(-15)">-15s</button>
+                <button class="timer-btn timer-btn-main" id="timer-toggle" onclick="toggleTimer()">Start</button>
+                <button class="timer-btn" onclick="adjustTimer(15)">+15s</button>
+            </div>
+            <div class="timer-presets">
+                <button class="preset-btn" onclick="setTimer(30)">30s</button>
+                <button class="preset-btn" onclick="setTimer(60)">1m</button>
+                <button class="preset-btn active" onclick="setTimer(90)">1:30</button>
+                <button class="preset-btn" onclick="setTimer(120)">2m</button>
+                <button class="preset-btn" onclick="setTimer(180)">3m</button>
+            </div>
+            <button class="timer-close" onclick="hideTimer()">&times;</button>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-btn active" data-screen="today">
+                <span class="nav-icon">&#128170;</span>
+                <span class="nav-label">Today</span>
+            </button>
+            <button class="nav-btn" data-screen="exercises">
+                <span class="nav-icon">&#128203;</span>
+                <span class="nav-label">Exercises</span>
+            </button>
+            <button class="nav-btn" data-screen="history">
+                <span class="nav-icon">&#128197;</span>
+                <span class="nav-label">History</span>
+            </button>
+            <button class="nav-btn" data-screen="progress">
+                <span class="nav-icon">&#128200;</span>
+                <span class="nav-label">Progress</span>
+            </button>
+        </nav>
+
+        <!-- Modal for adding exercises to workout -->
+        <div id="add-exercise-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Add Exercise</h2>
+                    <button class="close-btn" onclick="closeModal('add-exercise-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal-exercise-list" class="exercise-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for creating new exercise -->
+        <div id="create-exercise-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>New Exercise</h2>
+                    <button class="close-btn" onclick="closeModal('create-exercise-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-exercise-form" onsubmit="createExercise(event)">
+                        <div class="form-group">
+                            <label for="exercise-name">Exercise Name</label>
+                            <input type="text" id="exercise-name" required placeholder="e.g., Bench Press">
+                        </div>
+                        <div class="form-group">
+                            <label for="exercise-category">Category</label>
+                            <select id="exercise-category" required>
+                                <option value="weight">Weight Training</option>
+                                <option value="cardio">Cardio</option>
+                                <option value="bodyweight">Bodyweight</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="default-sets">Default Sets</label>
+                                <input type="number" id="default-sets" value="3" min="1" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="default-reps">Default Reps</label>
+                                <input type="number" id="default-reps" value="10" min="1" max="100">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create Exercise</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for logging sets -->
+        <div id="log-sets-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="log-sets-title">Log Sets</h2>
+                    <button class="close-btn" onclick="closeModal('log-sets-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="sets-container"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addSetRow()">+ Add Set</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSets()">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for workout details -->
+        <div id="workout-detail-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="workout-detail-title">Workout Details</h2>
+                    <button class="close-btn" onclick="closeModal('workout-detail-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="workout-detail-content"></div>
+                    <button type="button" class="btn btn-primary" onclick="repeatWorkout()">Repeat This Workout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
