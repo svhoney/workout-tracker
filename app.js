@@ -283,10 +283,16 @@ function addExerciseToWorkout(exerciseId) {
   const exercise = exercises.find(e => e.id === exerciseId);
   if (!exercise) return;
 
-  // Create default sets
+  // Create default sets based on category
   const sets = [];
+  const isCardio = exercise.category === 'cardio';
+
   for (let i = 0; i < exercise.defaultSets; i++) {
-    sets.push({ reps: exercise.defaultReps, weight: 0 });
+    if (isCardio) {
+      sets.push({ duration: 30, calories: 0, reps: 0, weight: 0 });
+    } else {
+      sets.push({ reps: exercise.defaultReps, weight: 0, duration: 0, calories: 0 });
+    }
   }
 
   currentWorkout.exercises.push({
@@ -319,7 +325,8 @@ function openLogSets(exerciseIndex) {
   container.innerHTML = '';
 
   exercise.sets.forEach((set, index) => {
-    addSetRowHtml(container, index + 1, set.reps, set.weight, set.duration || 0);
+    const weightOrCals = currentEditingCategory === 'cardio' ? (set.calories || 0) : (set.weight || 0);
+    addSetRowHtml(container, index + 1, set.reps || 0, weightOrCals, set.duration || 0);
   });
 
   document.getElementById('log-sets-modal').classList.add('active');
@@ -783,7 +790,13 @@ function showWorkoutDetail(workoutId) {
   document.getElementById('workout-detail-title').textContent = formatDate(workout.date);
 
   const content = document.getElementById('workout-detail-content');
-  content.innerHTML = workout.exercises.map(ex => {
+
+  // Show workout notes if present
+  const workoutNotesHtml = workout.notes
+    ? `<div class="workout-notes has-notes" style="display:block; margin-bottom:16px;">${workout.notes}</div>`
+    : '';
+
+  const exercisesHtml = workout.exercises.map(ex => {
     const isCardio = ex.category === 'cardio';
     const setsHtml = ex.sets.map((set, i) => {
       if (isCardio) {
@@ -793,13 +806,18 @@ function showWorkoutDetail(workoutId) {
       }
     }).join('<br>');
 
+    const notesHtml = ex.notes ? `<div class="exercise-notes">${ex.notes}</div>` : '';
+
     return `
       <div class="detail-exercise">
         <div class="detail-exercise-name">${ex.name}</div>
         <div class="detail-sets">${setsHtml}</div>
+        ${notesHtml}
       </div>
     `;
   }).join('');
+
+  content.innerHTML = workoutNotesHtml + exercisesHtml;
 
   document.getElementById('workout-detail-modal').classList.add('active');
 }
@@ -811,9 +829,18 @@ function repeatWorkout() {
   currentWorkout = {
     id: generateId(),
     date: getTodayString(),
+    notes: '',
     exercises: workout.exercises.map(ex => ({
-      ...ex,
-      sets: ex.sets.map(s => ({ reps: s.reps, weight: s.weight }))
+      exerciseId: ex.exerciseId,
+      name: ex.name,
+      category: ex.category,
+      notes: '',
+      sets: ex.sets.map(s => ({
+        reps: s.reps || 0,
+        weight: s.weight || 0,
+        duration: s.duration || 0,
+        calories: s.calories || 0
+      }))
     }))
   };
 
