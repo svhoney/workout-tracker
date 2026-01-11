@@ -87,6 +87,9 @@ const DEFAULT_EXERCISES = [
 let exercises = Storage.get('exercises') || [...DEFAULT_EXERCISES];
 let workouts = Storage.get('workouts') || [];
 let currentWorkout = Storage.get('currentWorkout') || null;
+let templates = Storage.get('templates') || [];
+let bodyWeightLog = Storage.get('bodyWeightLog') || [];
+let personalRecords = Storage.get('personalRecords') || {};
 let currentFilter = 'all';
 let editingExerciseIndex = null;
 let progressChart = null;
@@ -158,14 +161,43 @@ function startWorkout() {
   currentWorkout = {
     id: generateId(),
     date: getTodayString(),
+    notes: '',
     exercises: []
   };
   Storage.set('currentWorkout', currentWorkout);
   initTodayScreen();
 }
 
+function editWorkoutNotes() {
+  const notes = prompt('Workout notes:', currentWorkout.notes || '');
+  if (notes !== null) {
+    currentWorkout.notes = notes;
+    Storage.set('currentWorkout', currentWorkout);
+    renderCurrentWorkout();
+  }
+}
+
+function editExerciseNotes(index) {
+  const exercise = currentWorkout.exercises[index];
+  const notes = prompt(`Notes for ${exercise.name}:`, exercise.notes || '');
+  if (notes !== null) {
+    exercise.notes = notes;
+    Storage.set('currentWorkout', currentWorkout);
+    renderCurrentWorkout();
+  }
+}
+
 function renderCurrentWorkout() {
   const container = document.getElementById('workout-exercises');
+  const notesEl = document.getElementById('workout-notes');
+
+  // Show workout notes
+  if (currentWorkout.notes) {
+    notesEl.textContent = currentWorkout.notes;
+    notesEl.classList.add('has-notes');
+  } else {
+    notesEl.classList.remove('has-notes');
+  }
 
   if (currentWorkout.exercises.length === 0) {
     container.innerHTML = '<div class="empty-state"><p>Add your first exercise</p></div>';
@@ -209,6 +241,10 @@ function renderCurrentWorkout() {
         : `${totalSets} sets`;
     }
 
+    const notesHtml = ex.notes
+      ? `<div class="exercise-notes" onclick="event.stopPropagation(); editExerciseNotes(${index})">${ex.notes}</div>`
+      : '';
+
     return `
       <div class="workout-exercise">
         <div class="workout-exercise-header" onclick="openLogSets(${index})">
@@ -221,6 +257,7 @@ function renderCurrentWorkout() {
         <div class="workout-sets">
           ${setsHtml}
         </div>
+        ${notesHtml}
       </div>
     `;
   }).join('');
@@ -256,6 +293,7 @@ function addExerciseToWorkout(exerciseId) {
     exerciseId: exercise.id,
     name: exercise.name,
     category: exercise.category,
+    notes: '',
     sets: sets
   });
 
@@ -374,11 +412,261 @@ function finishWorkout() {
     return;
   }
 
+  // Check for personal records before saving
+  checkAndUpdatePRs(currentWorkout);
+
   workouts.unshift(currentWorkout);
   Storage.set('workouts', workouts);
   currentWorkout = null;
   Storage.set('currentWorkout', null);
   initTodayScreen();
+}
+
+// ==========================================
+// Workout Templates
+// ==========================================
+
+function showSaveTemplate() {
+  if (!currentWorkout || currentWorkout.exercises.length === 0) {
+    alert('Add exercises before saving as template.');
+    return;
+  }
+  const name = prompt('Template name (e.g., "Leg Day"):');
+  if (name && name.trim()) {
+    saveAsTemplate(name.trim());
+  }
+}
+
+function saveAsTemplate(name) {
+  const template = {
+    id: generateId(),
+    name: name,
+    exercises: currentWorkout.exercises.map(ex => ({
+      exerciseId: ex.exerciseId,
+      name: ex.name,
+      category: ex.category,
+      sets: ex.sets.map(s => ({
+        reps: s.reps || 0,
+        weight: s.weight || 0,
+        duration: s.duration || 0,
+        calories: s.calories || 0
+      }))
+    }))
+  };
+  templates.push(template);
+  Storage.set('templates', templates);
+  alert(`Template "${name}" saved!`);
+}
+
+function showLoadTemplate() {
+  if (templates.length === 0) {
+    alert('No templates saved yet. Finish a workout and save it as a template.');
+    return;
+  }
+  document.getElementById('template-list').innerHTML = templates.map(t => `
+    <div class="exercise-item" onclick="loadTemplate('${t.id}')">
+      <div class="exercise-info">
+        <div class="exercise-name">${t.name}</div>
+        <div class="exercise-meta">${t.exercises.length} exercises</div>
+      </div>
+      <button class="delete-btn" onclick="event.stopPropagation(); deleteTemplate('${t.id}')">×</button>
+    </div>
+  `).join('');
+  document.getElementById('template-modal').classList.add('active');
+}
+
+function loadTemplate(templateId) {
+  const template = templates.find(t => t.id === templateId);
+  if (!template) return;
+
+  currentWorkout = {
+    id: generateId(),
+    date: getTodayString(),
+    notes: '',
+    exercises: template.exercises.map(ex => ({
+      exerciseId: ex.exerciseId,
+      name: ex.name,
+      category: ex.category,
+      notes: '',
+      sets: ex.sets.map(s => ({ ...s }))
+    }))
+  };
+  Storage.set('currentWorkout', currentWorkout);
+  closeModal('template-modal');
+  initTodayScreen();
+}
+
+function deleteTemplate(templateId) {
+  if (confirm('Delete this template?')) {
+    templates = templates.filter(t => t.id !== templateId);
+    Storage.set('templates', templates);
+    showLoadTemplate();
+  }
+}
+
+// ==========================================
+// Personal Records
+// ==========================================
+
+function checkAndUpdatePRs(workout) {
+  let newPRs = [];
+
+  workout.exercises.forEach(ex => {
+    if (ex.category === 'cardio') return;
+
+    const maxWeight = Math.max(...ex.sets.map(s => s.weight || 0));
+    const maxVolume = ex.sets.reduce((sum, s) => sum + ((s.reps || 0) * (s.weight || 0)), 0);
+
+    if (maxWeight > 0) {
+      const prKey = `${ex.name}_weight`;
+      if (!personalRecords[prKey] || maxWeight > personalRecords[prKey].value) {
+        personalRecords[prKey] = { value: maxWeight, date: workout.date };
+        newPRs.push(`${ex.name}: ${maxWeight} lbs`);
+      }
+    }
+
+    if (maxVolume > 0) {
+      const prKey = `${ex.name}_volume`;
+      if (!personalRecords[prKey] || maxVolume > personalRecords[prKey].value) {
+        personalRecords[prKey] = { value: maxVolume, date: workout.date };
+      }
+    }
+  });
+
+  Storage.set('personalRecords', personalRecords);
+
+  if (newPRs.length > 0) {
+    setTimeout(() => {
+      alert('New Personal Records!\n\n' + newPRs.join('\n'));
+    }, 100);
+  }
+}
+
+function getPR(exerciseName, type = 'weight') {
+  const prKey = `${exerciseName}_${type}`;
+  return personalRecords[prKey] || null;
+}
+
+// ==========================================
+// Body Weight Tracking
+// ==========================================
+
+function showLogWeight() {
+  const today = getTodayString();
+  const existing = bodyWeightLog.find(e => e.date === today);
+  document.getElementById('body-weight-input').value = existing ? existing.weight : '';
+  document.getElementById('weight-log-modal').classList.add('active');
+}
+
+function saveBodyWeight() {
+  const weight = parseFloat(document.getElementById('body-weight-input').value);
+  if (!weight || weight <= 0) {
+    alert('Please enter a valid weight.');
+    return;
+  }
+
+  const today = getTodayString();
+  const existingIndex = bodyWeightLog.findIndex(e => e.date === today);
+
+  if (existingIndex >= 0) {
+    bodyWeightLog[existingIndex].weight = weight;
+  } else {
+    bodyWeightLog.push({ date: today, weight: weight });
+    bodyWeightLog.sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+
+  Storage.set('bodyWeightLog', bodyWeightLog);
+  closeModal('weight-log-modal');
+  if (document.getElementById('progress-screen').classList.contains('active')) {
+    initProgressScreen();
+  }
+}
+
+function getWeightHistory() {
+  return bodyWeightLog.slice(-30);
+}
+
+// ==========================================
+// Weekly/Monthly Summaries
+// ==========================================
+
+function getSummaryStats() {
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const weekWorkouts = workouts.filter(w => new Date(w.date) >= weekAgo);
+  const monthWorkouts = workouts.filter(w => new Date(w.date) >= monthAgo);
+
+  const calcVolume = (workoutList) => {
+    return workoutList.reduce((total, w) => {
+      return total + w.exercises.reduce((exTotal, ex) => {
+        if (ex.category === 'cardio') return exTotal;
+        return exTotal + ex.sets.reduce((setTotal, s) => {
+          return setTotal + ((s.reps || 0) * (s.weight || 0));
+        }, 0);
+      }, 0);
+    }, 0);
+  };
+
+  const calcDuration = (workoutList) => {
+    return workoutList.reduce((total, w) => {
+      return total + w.exercises.reduce((exTotal, ex) => {
+        if (ex.category !== 'cardio') return exTotal;
+        return exTotal + ex.sets.reduce((setTotal, s) => setTotal + (s.duration || 0), 0);
+      }, 0);
+    }, 0);
+  };
+
+  const calcCalories = (workoutList) => {
+    return workoutList.reduce((total, w) => {
+      return total + w.exercises.reduce((exTotal, ex) => {
+        return exTotal + ex.sets.reduce((setTotal, s) => setTotal + (s.calories || 0), 0);
+      }, 0);
+    }, 0);
+  };
+
+  return {
+    week: {
+      workouts: weekWorkouts.length,
+      volume: calcVolume(weekWorkouts),
+      cardioMinutes: calcDuration(weekWorkouts),
+      calories: calcCalories(weekWorkouts)
+    },
+    month: {
+      workouts: monthWorkouts.length,
+      volume: calcVolume(monthWorkouts),
+      cardioMinutes: calcDuration(monthWorkouts),
+      calories: calcCalories(monthWorkouts)
+    },
+    totalWorkouts: workouts.length,
+    currentStreak: calculateStreak()
+  };
+}
+
+function calculateStreak() {
+  if (workouts.length === 0) return 0;
+
+  const sortedDates = [...new Set(workouts.map(w => w.date))].sort().reverse();
+  let streak = 0;
+  let checkDate = new Date();
+  checkDate.setHours(0, 0, 0, 0);
+
+  for (const dateStr of sortedDates) {
+    const workoutDate = new Date(dateStr);
+    workoutDate.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.floor((checkDate - workoutDate) / (24 * 60 * 60 * 1000));
+
+    if (diffDays <= 1) {
+      streak++;
+      checkDate = workoutDate;
+    } else {
+      break;
+    }
+  }
+
+  return streak;
 }
 
 // ==========================================
@@ -539,9 +827,86 @@ function repeatWorkout() {
 // ==========================================
 
 function initProgressScreen() {
+  renderSummary();
+  renderBodyWeight();
   populateExerciseSelect();
   initChart();
   updateChart();
+}
+
+function renderSummary() {
+  const stats = getSummaryStats();
+  const container = document.getElementById('summary-cards');
+
+  container.innerHTML = `
+    <div class="summary-card streak">
+      <div class="summary-card-value">${stats.currentStreak}</div>
+      <div class="summary-card-label">Day Streak</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-value">${stats.week.workouts}</div>
+      <div class="summary-card-label">This Week</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-value">${formatVolume(stats.week.volume)}</div>
+      <div class="summary-card-label">Weekly Volume</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-value">${stats.week.cardioMinutes}</div>
+      <div class="summary-card-label">Cardio (min)</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-value">${stats.month.workouts}</div>
+      <div class="summary-card-label">This Month</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-value">${stats.totalWorkouts}</div>
+      <div class="summary-card-label">Total Workouts</div>
+    </div>
+  `;
+}
+
+function formatVolume(volume) {
+  if (volume >= 1000000) {
+    return (volume / 1000000).toFixed(1) + 'M';
+  } else if (volume >= 1000) {
+    return (volume / 1000).toFixed(1) + 'K';
+  }
+  return volume.toString();
+}
+
+function renderBodyWeight() {
+  const container = document.getElementById('weight-display');
+  const history = getWeightHistory();
+
+  if (history.length === 0) {
+    container.innerHTML = '<div class="weight-empty">No weight logged yet. Tap + Log to start tracking.</div>';
+    return;
+  }
+
+  const latest = history[history.length - 1];
+  let changeHtml = '';
+
+  if (history.length >= 2) {
+    const previous = history[history.length - 2];
+    const diff = (latest.weight - previous.weight).toFixed(1);
+    const diffClass = diff > 0 ? 'up' : diff < 0 ? 'down' : 'same';
+    const diffSign = diff > 0 ? '+' : '';
+    changeHtml = `<span class="weight-change ${diffClass}">${diffSign}${diff} lbs</span>`;
+  }
+
+  container.innerHTML = `
+    <div class="weight-current">
+      <div>
+        <span class="weight-value">${latest.weight}</span>
+        <span class="weight-unit">lbs</span>
+      </div>
+      ${changeHtml}
+    </div>
+    <div class="weight-date" style="font-size: 12px; color: var(--text-secondary);">
+      Last logged: ${formatDate(latest.date)}
+    </div>
+  `;
 }
 
 function populateExerciseSelect() {

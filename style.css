@@ -735,3 +735,161 @@ html, body {
   padding: 10px;
   line-height: 1;
 }
+
+/* Workout Notes */
+.workout-notes {
+  background: var(--surface);
+  border-radius: var(--border-radius);
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-style: italic;
+  cursor: pointer;
+  display: none;
+}
+
+.workout-notes.has-notes {
+  display: block;
+}
+
+.exercise-notes {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 4px 16px 12px;
+  cursor: pointer;
+}
+
+/* PR Badge */
+.pr-badge {
+  display: inline-block;
+  background: var(--warning);
+  color: #1a1a2e;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  text-transform: uppercase;
+}
+
+/* Summary Section */
+.summary-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.summary-card {
+  background: var(--surface);
+  border-radius: var(--border-radius);
+  padding: 14px;
+}
+
+.summary-card-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.summary-card-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.summary-card.streak .summary-card-value {
+  color: var(--warning);
+}
+
+/* Weight Section */
+.weight-section {
+  margin-bottom: 24px;
+}
+
+.weight-display {
+  background: var(--surface);
+  border-radius: var(--border-radius);
+  padding: 16px;
+}
+
+.weight-current {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.weight-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.weight-unit {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.weight-change {
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.weight-change.up {
+  background: rgba(255, 107, 107, 0.2);
+  color: var(--danger);
+}
+
+.weight-change.down {
+  background: rgba(0, 184, 148, 0.2);
+  color: var(--success);
+}
+
+.weight-change.same {
+  background: var(--surface-light);
+  color: var(--text-secondary);
+}
+
+.weight-empty {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.btn-small {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+}
+
+.btn-small:active {
+  transform: scale(0.95);
+}
