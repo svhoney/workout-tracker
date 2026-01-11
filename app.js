@@ -173,18 +173,41 @@ function renderCurrentWorkout() {
   }
 
   container.innerHTML = currentWorkout.exercises.map((ex, index) => {
-    const setsHtml = ex.sets.map((set, setIndex) => `
-      <div class="set-row">
-        <span class="set-number">Set ${setIndex + 1}</span>
-        <span class="set-details">${set.reps} reps ${set.weight ? `@ ${set.weight} lbs` : ''}</span>
-      </div>
-    `).join('');
+    const isCardio = ex.category === 'cardio';
 
-    const totalSets = ex.sets.length;
-    const maxWeight = Math.max(...ex.sets.map(s => s.weight || 0));
-    const summary = maxWeight > 0
-      ? `${totalSets} sets, max ${maxWeight} lbs`
-      : `${totalSets} sets`;
+    const setsHtml = ex.sets.map((set, setIndex) => {
+      if (isCardio) {
+        const details = set.duration ? `${set.duration} min${set.calories ? `, ${set.calories} cal` : ''}` : 'Not logged';
+        return `
+          <div class="set-row">
+            <span class="set-number">Session ${setIndex + 1}</span>
+            <span class="set-details">${details}</span>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="set-row">
+            <span class="set-number">Set ${setIndex + 1}</span>
+            <span class="set-details">${set.reps} reps ${set.weight ? `@ ${set.weight} lbs` : ''}</span>
+          </div>
+        `;
+      }
+    }).join('');
+
+    let summary;
+    if (isCardio) {
+      const totalDuration = ex.sets.reduce((sum, s) => sum + (s.duration || 0), 0);
+      const totalCals = ex.sets.reduce((sum, s) => sum + (s.calories || 0), 0);
+      summary = totalDuration > 0
+        ? `${totalDuration} min${totalCals > 0 ? `, ${totalCals} cal` : ''}`
+        : 'Tap to log';
+    } else {
+      const totalSets = ex.sets.length;
+      const maxWeight = Math.max(...ex.sets.map(s => s.weight || 0));
+      summary = maxWeight > 0
+        ? `${totalSets} sets, max ${maxWeight} lbs`
+        : `${totalSets} sets`;
+    }
 
     return `
       <div class="workout-exercise">
@@ -250,6 +273,7 @@ function removeExerciseFromWorkout(index) {
 function openLogSets(exerciseIndex) {
   editingExerciseIndex = exerciseIndex;
   const exercise = currentWorkout.exercises[exerciseIndex];
+  currentEditingCategory = exercise.category || 'weight';
 
   document.getElementById('log-sets-title').textContent = exercise.name;
 
@@ -257,23 +281,37 @@ function openLogSets(exerciseIndex) {
   container.innerHTML = '';
 
   exercise.sets.forEach((set, index) => {
-    addSetRowHtml(container, index + 1, set.reps, set.weight);
+    addSetRowHtml(container, index + 1, set.reps, set.weight, set.duration || 0);
   });
 
   document.getElementById('log-sets-modal').classList.add('active');
 }
 
-function addSetRowHtml(container, setNum, reps = 10, weight = 0) {
+let currentEditingCategory = 'weight';
+
+function addSetRowHtml(container, setNum, reps = 10, weight = 0, duration = 0) {
   const row = document.createElement('div');
   row.className = 'set-input-row';
-  row.innerHTML = `
-    <span class="set-num">${setNum}</span>
-    <input type="number" class="reps-input" value="${reps}" min="1" inputmode="numeric" pattern="[0-9]*">
-    <span class="input-label">reps</span>
-    <input type="number" class="weight-input" value="${weight}" min="0" inputmode="decimal" pattern="[0-9]*">
-    <span class="input-label">lbs</span>
-    <button class="remove-set" onclick="removeSetRow(this)">×</button>
-  `;
+
+  if (currentEditingCategory === 'cardio') {
+    row.innerHTML = `
+      <span class="set-num">${setNum}</span>
+      <input type="number" class="duration-input" value="${duration}" min="0" inputmode="numeric" pattern="[0-9]*">
+      <span class="input-label">min</span>
+      <input type="number" class="weight-input" value="${weight}" min="0" inputmode="decimal" pattern="[0-9]*">
+      <span class="input-label">cal</span>
+      <button class="remove-set" onclick="removeSetRow(this)">×</button>
+    `;
+  } else {
+    row.innerHTML = `
+      <span class="set-num">${setNum}</span>
+      <input type="number" class="reps-input" value="${reps}" min="1" inputmode="numeric" pattern="[0-9]*">
+      <span class="input-label">reps</span>
+      <input type="number" class="weight-input" value="${weight}" min="0" inputmode="decimal" pattern="[0-9]*">
+      <span class="input-label">lbs</span>
+      <button class="remove-set" onclick="removeSetRow(this)">×</button>
+    `;
+  }
   container.appendChild(row);
 }
 
@@ -281,9 +319,16 @@ function addSetRow() {
   const container = document.getElementById('sets-container');
   const setNum = container.children.length + 1;
   const lastRow = container.lastElementChild;
-  const lastReps = lastRow ? lastRow.querySelector('.reps-input').value : 10;
-  const lastWeight = lastRow ? lastRow.querySelector('.weight-input').value : 0;
-  addSetRowHtml(container, setNum, lastReps, lastWeight);
+
+  if (currentEditingCategory === 'cardio') {
+    const lastDuration = lastRow ? (lastRow.querySelector('.duration-input')?.value || 30) : 30;
+    const lastCals = lastRow ? (lastRow.querySelector('.weight-input')?.value || 0) : 0;
+    addSetRowHtml(container, setNum, 0, lastCals, lastDuration);
+  } else {
+    const lastReps = lastRow ? (lastRow.querySelector('.reps-input')?.value || 10) : 10;
+    const lastWeight = lastRow ? (lastRow.querySelector('.weight-input')?.value || 0) : 0;
+    addSetRowHtml(container, setNum, lastReps, lastWeight, 0);
+  }
 }
 
 function removeSetRow(button) {
@@ -299,10 +344,23 @@ function removeSetRow(button) {
 
 function saveSets() {
   const container = document.getElementById('sets-container');
-  const sets = Array.from(container.querySelectorAll('.set-input-row')).map(row => ({
-    reps: parseInt(row.querySelector('.reps-input').value) || 0,
-    weight: parseFloat(row.querySelector('.weight-input').value) || 0
-  }));
+  const sets = Array.from(container.querySelectorAll('.set-input-row')).map(row => {
+    if (currentEditingCategory === 'cardio') {
+      return {
+        duration: parseInt(row.querySelector('.duration-input')?.value) || 0,
+        calories: parseFloat(row.querySelector('.weight-input')?.value) || 0,
+        reps: 0,
+        weight: 0
+      };
+    } else {
+      return {
+        reps: parseInt(row.querySelector('.reps-input')?.value) || 0,
+        weight: parseFloat(row.querySelector('.weight-input')?.value) || 0,
+        duration: 0,
+        calories: 0
+      };
+    }
+  });
 
   currentWorkout.exercises[editingExerciseIndex].sets = sets;
   Storage.set('currentWorkout', currentWorkout);
@@ -438,9 +496,14 @@ function showWorkoutDetail(workoutId) {
 
   const content = document.getElementById('workout-detail-content');
   content.innerHTML = workout.exercises.map(ex => {
-    const setsHtml = ex.sets.map((set, i) =>
-      `Set ${i + 1}: ${set.reps} reps${set.weight ? ` @ ${set.weight} lbs` : ''}`
-    ).join('<br>');
+    const isCardio = ex.category === 'cardio';
+    const setsHtml = ex.sets.map((set, i) => {
+      if (isCardio) {
+        return `Session ${i + 1}: ${set.duration || 0} min${set.calories ? `, ${set.calories} cal` : ''}`;
+      } else {
+        return `Set ${i + 1}: ${set.reps} reps${set.weight ? ` @ ${set.weight} lbs` : ''}`;
+      }
+    }).join('<br>');
 
     return `
       <div class="detail-exercise">
@@ -565,15 +628,23 @@ function updateChart() {
     const exercise = workout.exercises.find(e => e.name === exerciseName);
     if (exercise && exercise.sets.length > 0) {
       let value;
+      const isCardio = exercise.category === 'cardio';
+
       switch (metric) {
         case 'weight':
-          value = Math.max(...exercise.sets.map(s => s.weight || 0));
+          value = isCardio ? 0 : Math.max(...exercise.sets.map(s => s.weight || 0));
           break;
         case 'volume':
-          value = exercise.sets.reduce((sum, s) => sum + (s.reps * (s.weight || 1)), 0);
+          value = isCardio ? 0 : exercise.sets.reduce((sum, s) => sum + (s.reps * (s.weight || 1)), 0);
           break;
         case 'reps':
-          value = exercise.sets.reduce((sum, s) => sum + s.reps, 0);
+          value = isCardio ? 0 : exercise.sets.reduce((sum, s) => sum + s.reps, 0);
+          break;
+        case 'duration':
+          value = exercise.sets.reduce((sum, s) => sum + (s.duration || 0), 0);
+          break;
+        case 'calories':
+          value = exercise.sets.reduce((sum, s) => sum + (s.calories || 0), 0);
           break;
       }
       if (value > 0) {
@@ -588,8 +659,14 @@ function updateChart() {
   // Update chart
   progressChart.data.labels = dataPoints.map(d => formatDate(d.date));
   progressChart.data.datasets[0].data = dataPoints.map(d => d.value);
-  progressChart.data.datasets[0].label = metric === 'weight' ? 'Max Weight (lbs)'
-    : metric === 'volume' ? 'Volume (lbs)' : 'Total Reps';
+  const labels = {
+    weight: 'Max Weight (lbs)',
+    volume: 'Volume (lbs)',
+    reps: 'Total Reps',
+    duration: 'Duration (min)',
+    calories: 'Calories'
+  };
+  progressChart.data.datasets[0].label = labels[metric] || metric;
   progressChart.update();
 
   // Update stats
