@@ -146,6 +146,10 @@
                     <button class="close-btn" onclick="closeModal('add-exercise-modal')">&times;</button>
                 </div>
                 <div class="modal-body">
+                    <div class="search-container">
+                        <input type="text" id="exercise-search" class="search-input" placeholder="Search or create exercise..." oninput="filterExerciseList()">
+                    </div>
+                    <div id="create-from-search" class="create-from-search" style="display: none;"></div>
                     <div id="modal-exercise-list" class="exercise-list"></div>
                 </div>
             </div>
@@ -181,6 +185,10 @@
                                 <label for="default-reps">Default Reps</label>
                                 <input type="number" id="default-reps" value="10" min="1" max="100">
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="default-rest">Rest Between Sets (seconds)</label>
+                            <input type="number" id="default-rest" value="90" min="0" max="600" inputmode="numeric">
                         </div>
                         <button type="submit" class="btn btn-primary">Create Exercise</button>
                     </form>

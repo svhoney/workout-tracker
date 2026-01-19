@@ -47,37 +47,37 @@ function formatDate(dateString) {
 // ==========================================
 
 const DEFAULT_EXERCISES = [
-  // Weight Training
-  { id: 'bench-press', name: 'Bench Press', category: 'weight', defaultSets: 3, defaultReps: 10 },
-  { id: 'squat', name: 'Squat', category: 'weight', defaultSets: 3, defaultReps: 10 },
-  { id: 'deadlift', name: 'Deadlift', category: 'weight', defaultSets: 3, defaultReps: 8 },
-  { id: 'overhead-press', name: 'Overhead Press', category: 'weight', defaultSets: 3, defaultReps: 10 },
-  { id: 'barbell-row', name: 'Barbell Row', category: 'weight', defaultSets: 3, defaultReps: 10 },
-  { id: 'lat-pulldown', name: 'Lat Pulldown', category: 'weight', defaultSets: 3, defaultReps: 12 },
-  { id: 'bicep-curl', name: 'Bicep Curl', category: 'weight', defaultSets: 3, defaultReps: 12 },
-  { id: 'tricep-pushdown', name: 'Tricep Pushdown', category: 'weight', defaultSets: 3, defaultReps: 12 },
-  { id: 'leg-press', name: 'Leg Press', category: 'weight', defaultSets: 3, defaultReps: 12 },
-  { id: 'leg-curl', name: 'Leg Curl', category: 'weight', defaultSets: 3, defaultReps: 12 },
-  { id: 'calf-raise', name: 'Calf Raise', category: 'weight', defaultSets: 3, defaultReps: 15 },
-  { id: 'dumbbell-fly', name: 'Dumbbell Fly', category: 'weight', defaultSets: 3, defaultReps: 12 },
-  { id: 'shoulder-lateral-raise', name: 'Lateral Raise', category: 'weight', defaultSets: 3, defaultReps: 15 },
+  // Weight Training - compound movements get longer rest (120-180s), isolation gets shorter (60-90s)
+  { id: 'bench-press', name: 'Bench Press', category: 'weight', defaultSets: 3, defaultReps: 10, restTime: 120 },
+  { id: 'squat', name: 'Squat', category: 'weight', defaultSets: 3, defaultReps: 10, restTime: 150 },
+  { id: 'deadlift', name: 'Deadlift', category: 'weight', defaultSets: 3, defaultReps: 8, restTime: 180 },
+  { id: 'overhead-press', name: 'Overhead Press', category: 'weight', defaultSets: 3, defaultReps: 10, restTime: 120 },
+  { id: 'barbell-row', name: 'Barbell Row', category: 'weight', defaultSets: 3, defaultReps: 10, restTime: 120 },
+  { id: 'lat-pulldown', name: 'Lat Pulldown', category: 'weight', defaultSets: 3, defaultReps: 12, restTime: 90 },
+  { id: 'bicep-curl', name: 'Bicep Curl', category: 'weight', defaultSets: 3, defaultReps: 12, restTime: 60 },
+  { id: 'tricep-pushdown', name: 'Tricep Pushdown', category: 'weight', defaultSets: 3, defaultReps: 12, restTime: 60 },
+  { id: 'leg-press', name: 'Leg Press', category: 'weight', defaultSets: 3, defaultReps: 12, restTime: 120 },
+  { id: 'leg-curl', name: 'Leg Curl', category: 'weight', defaultSets: 3, defaultReps: 12, restTime: 60 },
+  { id: 'calf-raise', name: 'Calf Raise', category: 'weight', defaultSets: 3, defaultReps: 15, restTime: 45 },
+  { id: 'dumbbell-fly', name: 'Dumbbell Fly', category: 'weight', defaultSets: 3, defaultReps: 12, restTime: 60 },
+  { id: 'shoulder-lateral-raise', name: 'Lateral Raise', category: 'weight', defaultSets: 3, defaultReps: 15, restTime: 45 },
 
-  // Cardio
-  { id: 'running', name: 'Running', category: 'cardio', defaultSets: 1, defaultReps: 1 },
-  { id: 'cycling', name: 'Cycling', category: 'cardio', defaultSets: 1, defaultReps: 1 },
-  { id: 'rowing', name: 'Rowing', category: 'cardio', defaultSets: 1, defaultReps: 1 },
-  { id: 'jump-rope', name: 'Jump Rope', category: 'cardio', defaultSets: 3, defaultReps: 100 },
-  { id: 'stair-climber', name: 'Stair Climber', category: 'cardio', defaultSets: 1, defaultReps: 1 },
+  // Cardio - no rest time needed
+  { id: 'running', name: 'Running', category: 'cardio', defaultSets: 1, defaultReps: 1, restTime: 0 },
+  { id: 'cycling', name: 'Cycling', category: 'cardio', defaultSets: 1, defaultReps: 1, restTime: 0 },
+  { id: 'rowing', name: 'Rowing', category: 'cardio', defaultSets: 1, defaultReps: 1, restTime: 0 },
+  { id: 'jump-rope', name: 'Jump Rope', category: 'cardio', defaultSets: 3, defaultReps: 100, restTime: 0 },
+  { id: 'stair-climber', name: 'Stair Climber', category: 'cardio', defaultSets: 1, defaultReps: 1, restTime: 0 },
 
   // Bodyweight
-  { id: 'push-ups', name: 'Push-ups', category: 'bodyweight', defaultSets: 3, defaultReps: 15 },
-  { id: 'pull-ups', name: 'Pull-ups', category: 'bodyweight', defaultSets: 3, defaultReps: 8 },
-  { id: 'dips', name: 'Dips', category: 'bodyweight', defaultSets: 3, defaultReps: 10 },
-  { id: 'lunges', name: 'Lunges', category: 'bodyweight', defaultSets: 3, defaultReps: 12 },
-  { id: 'plank', name: 'Plank', category: 'bodyweight', defaultSets: 3, defaultReps: 60 },
-  { id: 'burpees', name: 'Burpees', category: 'bodyweight', defaultSets: 3, defaultReps: 10 },
-  { id: 'mountain-climbers', name: 'Mountain Climbers', category: 'bodyweight', defaultSets: 3, defaultReps: 20 },
-  { id: 'crunches', name: 'Crunches', category: 'bodyweight', defaultSets: 3, defaultReps: 20 },
+  { id: 'push-ups', name: 'Push-ups', category: 'bodyweight', defaultSets: 3, defaultReps: 15, restTime: 60 },
+  { id: 'pull-ups', name: 'Pull-ups', category: 'bodyweight', defaultSets: 3, defaultReps: 8, restTime: 90 },
+  { id: 'dips', name: 'Dips', category: 'bodyweight', defaultSets: 3, defaultReps: 10, restTime: 90 },
+  { id: 'lunges', name: 'Lunges', category: 'bodyweight', defaultSets: 3, defaultReps: 12, restTime: 60 },
+  { id: 'plank', name: 'Plank', category: 'bodyweight', defaultSets: 3, defaultReps: 60, restTime: 60 },
+  { id: 'burpees', name: 'Burpees', category: 'bodyweight', defaultSets: 3, defaultReps: 10, restTime: 60 },
+  { id: 'mountain-climbers', name: 'Mountain Climbers', category: 'bodyweight', defaultSets: 3, defaultReps: 20, restTime: 45 },
+  { id: 'crunches', name: 'Crunches', category: 'bodyweight', defaultSets: 3, defaultReps: 20, restTime: 30 },
 ];
 
 // ==========================================
@@ -187,6 +187,27 @@ function editExerciseNotes(index) {
   }
 }
 
+function editExerciseRestTime(index) {
+  const exercise = currentWorkout.exercises[index];
+  const currentRest = exercise.restTime || 90;
+  const newRest = prompt(`Rest time between sets for ${exercise.name} (seconds):`, currentRest);
+  if (newRest !== null) {
+    const restSeconds = parseInt(newRest);
+    if (!isNaN(restSeconds) && restSeconds >= 0) {
+      exercise.restTime = restSeconds;
+      Storage.set('currentWorkout', currentWorkout);
+      renderCurrentWorkout();
+
+      // Also update the exercise in the library
+      const libraryExercise = exercises.find(e => e.id === exercise.exerciseId);
+      if (libraryExercise) {
+        libraryExercise.restTime = restSeconds;
+        Storage.set('exercises', exercises);
+      }
+    }
+  }
+}
+
 function renderCurrentWorkout() {
   const container = document.getElementById('workout-exercises');
   const notesEl = document.getElementById('workout-notes');
@@ -245,11 +266,15 @@ function renderCurrentWorkout() {
       ? `<div class="exercise-notes" onclick="event.stopPropagation(); editExerciseNotes(${index})">${ex.notes}</div>`
       : '';
 
+    const restTimeHtml = ex.category !== 'cardio'
+      ? `<span class="rest-time-badge" onclick="event.stopPropagation(); editExerciseRestTime(${index})">${ex.restTime || 90}s rest</span>`
+      : '';
+
     return `
       <div class="workout-exercise">
         <div class="workout-exercise-header" onclick="openLogSets(${index})">
           <div>
-            <div class="workout-exercise-name">${ex.name}</div>
+            <div class="workout-exercise-name">${ex.name} ${restTimeHtml}</div>
             <div class="workout-exercise-summary">${summary}</div>
           </div>
           <button class="delete-btn" onclick="event.stopPropagation(); removeExerciseFromWorkout(${index})">×</button>
@@ -265,18 +290,76 @@ function renderCurrentWorkout() {
 
 function showAddExercise() {
   const modal = document.getElementById('add-exercise-modal');
-  const list = document.getElementById('modal-exercise-list');
+  const searchInput = document.getElementById('exercise-search');
 
-  list.innerHTML = exercises.map(ex => `
-    <div class="exercise-item" onclick="addExerciseToWorkout('${ex.id}')">
-      <div class="exercise-info">
-        <div class="exercise-name">${ex.name}</div>
-        <span class="exercise-category category-${ex.category}">${ex.category}</span>
-      </div>
-    </div>
-  `).join('');
+  // Clear search and render full list
+  searchInput.value = '';
+  filterExerciseList();
 
   modal.classList.add('active');
+
+  // Focus search input after modal animation
+  setTimeout(() => searchInput.focus(), 300);
+}
+
+function filterExerciseList() {
+  const searchInput = document.getElementById('exercise-search');
+  const list = document.getElementById('modal-exercise-list');
+  const createFromSearch = document.getElementById('create-from-search');
+  const searchTerm = searchInput.value.trim().toLowerCase();
+
+  // Filter exercises based on search term
+  const filtered = searchTerm
+    ? exercises.filter(ex => ex.name.toLowerCase().includes(searchTerm))
+    : exercises;
+
+  // Check if exact match exists
+  const exactMatch = exercises.some(ex => ex.name.toLowerCase() === searchTerm);
+
+  // Show "create new" option if search term exists and no exact match
+  if (searchTerm && !exactMatch) {
+    const capitalizedName = searchInput.value.trim().split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+    createFromSearch.innerHTML = `
+      <div class="create-icon">+</div>
+      <div>
+        <div class="create-text">Create "${capitalizedName}"</div>
+        <div class="create-hint">Add as new exercise</div>
+      </div>
+    `;
+    createFromSearch.style.display = 'flex';
+    createFromSearch.onclick = () => createExerciseFromSearch(capitalizedName);
+  } else {
+    createFromSearch.style.display = 'none';
+  }
+
+  // Render filtered list
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="no-results">No exercises found</div>';
+  } else {
+    list.innerHTML = filtered.map(ex => {
+      const restTimeDisplay = ex.restTime ? `<span class="exercise-rest-time">${ex.restTime}s rest</span>` : '';
+      return `
+        <div class="exercise-item" onclick="addExerciseToWorkout('${ex.id}')">
+          <div class="exercise-info">
+            <div class="exercise-name">${ex.name}${restTimeDisplay}</div>
+            <span class="exercise-category category-${ex.category}">${ex.category}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function createExerciseFromSearch(name) {
+  // Close the add exercise modal
+  closeModal('add-exercise-modal');
+
+  // Open create exercise modal with name pre-filled
+  document.getElementById('create-exercise-form').reset();
+  document.getElementById('exercise-name').value = name;
+  document.getElementById('create-exercise-modal').classList.add('active');
 }
 
 function addExerciseToWorkout(exerciseId) {
@@ -299,6 +382,7 @@ function addExerciseToWorkout(exerciseId) {
     exerciseId: exercise.id,
     name: exercise.name,
     category: exercise.category,
+    restTime: exercise.restTime || 90,
     notes: '',
     sets: sets
   });
@@ -407,10 +491,22 @@ function saveSets() {
     }
   });
 
-  currentWorkout.exercises[editingExerciseIndex].sets = sets;
+  const exercise = currentWorkout.exercises[editingExerciseIndex];
+  exercise.sets = sets;
   Storage.set('currentWorkout', currentWorkout);
   closeModal('log-sets-modal');
   renderCurrentWorkout();
+
+  // Auto-start rest timer if exercise has rest time configured (non-cardio only)
+  if (exercise.category !== 'cardio' && exercise.restTime && exercise.restTime > 0) {
+    startRestTimerForExercise(exercise.restTime);
+  }
+}
+
+function startRestTimerForExercise(seconds) {
+  setTimer(seconds);
+  showTimer();
+  startTimer();
 }
 
 function finishWorkout() {
@@ -452,6 +548,7 @@ function saveAsTemplate(name) {
       exerciseId: ex.exerciseId,
       name: ex.name,
       category: ex.category,
+      restTime: ex.restTime || 90,
       sets: ex.sets.map(s => ({
         reps: s.reps || 0,
         weight: s.weight || 0,
@@ -494,6 +591,7 @@ function loadTemplate(templateId) {
       exerciseId: ex.exerciseId,
       name: ex.name,
       category: ex.category,
+      restTime: ex.restTime || 90,
       notes: '',
       sets: ex.sets.map(s => ({ ...s }))
     }))
@@ -739,6 +837,7 @@ function createExercise(event) {
   const category = document.getElementById('exercise-category').value;
   const defaultSets = parseInt(document.getElementById('default-sets').value) || 3;
   const defaultReps = parseInt(document.getElementById('default-reps').value) || 10;
+  const restTime = parseInt(document.getElementById('default-rest').value) || 90;
 
   if (!name) return;
 
@@ -747,13 +846,20 @@ function createExercise(event) {
     name,
     category,
     defaultSets,
-    defaultReps
+    defaultReps,
+    restTime
   };
 
   exercises.push(newExercise);
   Storage.set('exercises', exercises);
   closeModal('create-exercise-modal');
-  renderExerciseList();
+
+  // If we came from the add exercise modal, add to workout and return there
+  if (currentWorkout) {
+    addExerciseToWorkout(newExercise.id);
+  } else {
+    renderExerciseList();
+  }
 }
 
 function deleteExercise(id) {
@@ -835,18 +941,24 @@ function repeatWorkout() {
     id: generateId(),
     date: getTodayString(),
     notes: '',
-    exercises: workout.exercises.map(ex => ({
-      exerciseId: ex.exerciseId,
-      name: ex.name,
-      category: ex.category,
-      notes: '',
-      sets: ex.sets.map(s => ({
-        reps: s.reps || 0,
-        weight: s.weight || 0,
-        duration: s.duration || 0,
-        calories: s.calories || 0
-      }))
-    }))
+    exercises: workout.exercises.map(ex => {
+      // Get rest time from the original workout or look up from exercise library
+      const libraryExercise = exercises.find(e => e.id === ex.exerciseId);
+      const restTime = ex.restTime || (libraryExercise && libraryExercise.restTime) || 90;
+      return {
+        exerciseId: ex.exerciseId,
+        name: ex.name,
+        category: ex.category,
+        restTime: restTime,
+        notes: '',
+        sets: ex.sets.map(s => ({
+          reps: s.reps || 0,
+          weight: s.weight || 0,
+          duration: s.duration || 0,
+          calories: s.calories || 0
+        }))
+      };
+    })
   };
 
   Storage.set('currentWorkout', currentWorkout);

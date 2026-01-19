@@ -893,3 +893,93 @@ html, body {
 .btn-small:active {
   transform: scale(0.95);
 }
+
+/* Search Input */
+.search-container {
+  margin-bottom: 16px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--surface-light);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+  color: var(--text);
+  font-size: 16px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Create from search */
+.create-from-search {
+  background: var(--primary);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: background 0.2s;
+}
+
+.create-from-search:active {
+  background: var(--primary-dark);
+}
+
+.create-from-search .create-icon {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.create-from-search .create-text {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.create-from-search .create-hint {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* No results message */
+.no-results {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-secondary);
+}
+
+/* Rest time indicator on exercise */
+.exercise-rest-time {
+  font-size: 12px;
+  color: var(--secondary);
+  margin-left: 8px;
+}
+
+/* Rest time badge in workout */
+.rest-time-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--secondary);
+  background: rgba(0, 206, 201, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
