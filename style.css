@@ -982,6 +982,82 @@ html, body {
   cursor: pointer;
 }
 
+/* Edit Template Modal */
+.edit-exercise-row {
+  background: var(--surface-light);
+  border-radius: var(--border-radius);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.edit-exercise-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.edit-ex-name {
+  flex: 1;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: none;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.edit-ex-name:focus {
+  outline: 2px solid var(--primary);
+}
+
+.edit-exercise-details {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-ex-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.edit-ex-label input {
+  padding: 8px 4px;
+  background: var(--surface);
+  border: none;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 15px;
+  text-align: center;
+  width: 100%;
+}
+
+.edit-ex-label input:focus {
+  outline: 2px solid var(--primary);
+}
+
+.edit-template-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 18px;
+  padding: 8px;
+  cursor: pointer;
+  opacity: 0.8;
+  line-height: 1;
+}
+
+.edit-template-btn:active {
+  opacity: 1;
+}
+
 /* Scan Modal */
 .scan-template-btn {
   margin-bottom: 16px;

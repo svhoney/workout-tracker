@@ -259,6 +259,25 @@
             </div>
         </div>
 
+        <!-- Edit Template Modal -->
+        <div id="edit-template-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="edit-template-heading">Edit Template</h2>
+                    <button class="close-btn" onclick="closeModal('edit-template-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Template Name</label>
+                        <input type="text" id="edit-template-name-input" placeholder="e.g. Full Body #1">
+                    </div>
+                    <div id="edit-template-exercises"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addEditExerciseRow()">+ Add Exercise</button>
+                    <button type="button" class="btn btn-primary" onclick="saveEditedTemplate()">Save Template</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Scan Workout Modal -->
         <div id="scan-modal" class="modal">
             <div class="modal-content">
@@ -277,12 +296,6 @@
                     <div id="scan-loading" style="display:none" class="scan-loading">
                         <div class="scan-spinner"></div>
                         <p>Reading workout...</p>
-                    </div>
-                    <div id="scan-preview" style="display:none">
-                        <div class="scan-preview-name" id="scan-template-name"></div>
-                        <div id="scan-exercises-list" class="scan-exercises-list"></div>
-                        <button class="btn btn-primary" onclick="confirmScanTemplate()">Save as Template</button>
-                        <button class="btn btn-secondary" onclick="resetScan()">Try Again</button>
                     </div>
                     <div id="scan-error" style="display:none" class="scan-error">
                         <p id="scan-error-msg"></p>

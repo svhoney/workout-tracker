@@ -571,7 +571,10 @@ function showLoadTemplate() {
             <div class="exercise-name">${t.name}</div>
             <div class="exercise-meta">${t.exercises.length} exercises</div>
           </div>
-          <button class="delete-btn" onclick="event.stopPropagation(); deleteTemplate('${t.id}')">×</button>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="edit-template-btn" onclick="event.stopPropagation(); editTemplate('${t.id}')">&#9998;</button>
+            <button class="delete-btn" onclick="event.stopPropagation(); deleteTemplate('${t.id}')">×</button>
+          </div>
         </div>
       `).join('');
   document.getElementById('template-list').innerHTML = listHtml;
@@ -1264,8 +1267,6 @@ function importData(event) {
 // Scan Workout → Template
 // ==========================================
 
-let scannedTemplate = null;
-
 function showScanModal() {
   closeModal('template-modal');
   resetScan();
@@ -1273,10 +1274,8 @@ function showScanModal() {
 }
 
 function resetScan() {
-  scannedTemplate = null;
   document.getElementById('scan-idle').style.display = 'block';
   document.getElementById('scan-loading').style.display = 'none';
-  document.getElementById('scan-preview').style.display = 'none';
   document.getElementById('scan-error').style.display = 'none';
   document.getElementById('scan-file-input').value = '';
 }
@@ -1320,16 +1319,8 @@ async function handleScanImage(event) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Scan failed');
 
-    scannedTemplate = data;
-    document.getElementById('scan-loading').style.display = 'none';
-    document.getElementById('scan-preview').style.display = 'block';
-    document.getElementById('scan-template-name').textContent = data.name;
-    document.getElementById('scan-exercises-list').innerHTML = data.exercises.map(ex => `
-      <div class="scan-exercise-row">
-        <span class="scan-exercise-name">${ex.name}</span>
-        <span class="scan-exercise-meta">${ex.sets} × ${ex.reps} · ${ex.restSeconds}s rest</span>
-      </div>
-    `).join('');
+    closeModal('scan-modal');
+    openEditModal(data, null); // null = new template
   } catch (err) {
     document.getElementById('scan-loading').style.display = 'none';
     document.getElementById('scan-error').style.display = 'block';
@@ -1337,11 +1328,73 @@ async function handleScanImage(event) {
   }
 }
 
-function confirmScanTemplate() {
-  if (!scannedTemplate) return;
+// ==========================================
+// Template Editor
+// ==========================================
 
-  const templateExercises = scannedTemplate.exercises.map(ex => {
-    const match = exercises.find(e => e.name.toLowerCase() === ex.name.toLowerCase());
+let editingTemplateId = null;
+
+function editTemplate(templateId) {
+  const template = templates.find(t => t.id === templateId);
+  if (!template) return;
+  closeModal('template-modal');
+  openEditModal(template, templateId);
+}
+
+function openEditModal(template, templateId) {
+  editingTemplateId = templateId;
+  document.getElementById('edit-template-heading').textContent = templateId ? 'Edit Template' : 'Review Scan';
+  document.getElementById('edit-template-name-input').value = template.name || '';
+
+  const container = document.getElementById('edit-template-exercises');
+  container.innerHTML = template.exercises.map(ex => renderEditExerciseRow(ex)).join('');
+
+  document.getElementById('edit-template-modal').classList.add('active');
+}
+
+function renderEditExerciseRow(ex) {
+  // Handle both saved template format (ex.sets is an array) and scan format (ex.sets is a number)
+  const name = ex.name || '';
+  const sets = Array.isArray(ex.sets) ? ex.sets.length : (ex.sets || 3);
+  const reps = Array.isArray(ex.sets) ? (ex.sets[0]?.reps || 0) : (ex.reps || 10);
+  const rest = ex.restTime || ex.restSeconds || 90;
+
+  return `
+    <div class="edit-exercise-row">
+      <div class="edit-exercise-top">
+        <input type="text" class="edit-ex-name" value="${name.replace(/"/g, '&quot;')}" placeholder="Exercise name">
+        <button class="delete-btn" onclick="this.closest('.edit-exercise-row').remove()">×</button>
+      </div>
+      <div class="edit-exercise-details">
+        <label class="edit-ex-label">Sets<input type="number" class="edit-ex-sets" value="${sets}" min="1" max="20" inputmode="numeric"></label>
+        <label class="edit-ex-label">Reps<input type="number" class="edit-ex-reps" value="${reps}" min="0" max="999" inputmode="numeric"></label>
+        <label class="edit-ex-label">Rest (s)<input type="number" class="edit-ex-rest" value="${rest}" min="0" max="600" inputmode="numeric"></label>
+      </div>
+    </div>
+  `;
+}
+
+function addEditExerciseRow() {
+  const div = document.createElement('div');
+  div.innerHTML = renderEditExerciseRow({ name: '', sets: 3, reps: 10, restSeconds: 90 });
+  document.getElementById('edit-template-exercises').appendChild(div.firstElementChild);
+}
+
+function saveEditedTemplate() {
+  const name = document.getElementById('edit-template-name-input').value.trim();
+  if (!name) { alert('Please enter a template name.'); return; }
+
+  const rows = document.querySelectorAll('#edit-template-exercises .edit-exercise-row');
+  const templateExercises = [];
+
+  rows.forEach(row => {
+    const exName = row.querySelector('.edit-ex-name').value.trim();
+    if (!exName) return;
+    const sets = parseInt(row.querySelector('.edit-ex-sets').value) || 3;
+    const reps = parseInt(row.querySelector('.edit-ex-reps').value) || 0;
+    const rest = parseInt(row.querySelector('.edit-ex-rest').value) || 90;
+
+    const match = exercises.find(e => e.name.toLowerCase() === exName.toLowerCase());
     let exerciseId, category;
     if (match) {
       exerciseId = match.id;
@@ -1349,23 +1402,31 @@ function confirmScanTemplate() {
     } else {
       exerciseId = generateId();
       category = 'weight';
-      exercises.push({ id: exerciseId, name: ex.name, category, defaultSets: ex.sets, defaultReps: ex.reps, restTime: ex.restSeconds });
+      exercises.push({ id: exerciseId, name: exName, category, defaultSets: sets, defaultReps: reps, restTime: rest });
       Storage.set('exercises', exercises);
     }
-    return {
+
+    templateExercises.push({
       exerciseId,
-      name: ex.name,
+      name: exName,
       category,
-      restTime: ex.restSeconds,
-      sets: Array.from({ length: ex.sets }, () => ({ reps: ex.reps, weight: 0, duration: 0, calories: 0 }))
-    };
+      restTime: rest,
+      sets: Array.from({ length: sets }, () => ({ reps, weight: 0, duration: 0, calories: 0 }))
+    });
   });
 
-  const template = { id: generateId(), name: scannedTemplate.name, exercises: templateExercises };
-  templates.push(template);
+  if (templateExercises.length === 0) { alert('Add at least one exercise.'); return; }
+
+  if (editingTemplateId) {
+    const idx = templates.findIndex(t => t.id === editingTemplateId);
+    if (idx !== -1) { templates[idx] = { ...templates[idx], name, exercises: templateExercises }; }
+  } else {
+    templates.push({ id: generateId(), name, exercises: templateExercises });
+  }
   Storage.set('templates', templates);
-  closeModal('scan-modal');
-  alert(`Template "${template.name}" saved!`);
+
+  closeModal('edit-template-modal');
+  showLoadTemplate(); // return to (refreshed) template list
 }
 
 // ==========================================
