@@ -1210,6 +1210,166 @@ function updateChart() {
 }
 
 // ==========================================
+// Data Export / Import
+// ==========================================
+
+function exportData() {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    workouts: Storage.get('workouts') || [],
+    templates: Storage.get('templates') || [],
+    exercises: Storage.get('exercises') || [],
+    bodyWeightLog: Storage.get('bodyWeightLog') || [],
+    personalRecords: Storage.get('personalRecords') || {}
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `workout-backup-${getTodayString()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.workouts && !data.templates) {
+        alert('Invalid backup file.');
+        return;
+      }
+      if (!confirm('This will replace all your current data. Continue?')) return;
+
+      if (data.workouts)       { workouts        = data.workouts;        Storage.set('workouts', workouts); }
+      if (data.templates)      { templates       = data.templates;       Storage.set('templates', templates); }
+      if (data.exercises)      { exercises       = data.exercises;       Storage.set('exercises', exercises); }
+      if (data.bodyWeightLog)  { bodyWeightLog   = data.bodyWeightLog;   Storage.set('bodyWeightLog', bodyWeightLog); }
+      if (data.personalRecords){ personalRecords = data.personalRecords; Storage.set('personalRecords', personalRecords); }
+
+      alert('Data restored successfully!');
+      navigateTo('progress');
+    } catch {
+      alert('Failed to read backup file.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ==========================================
+// Scan Workout → Template
+// ==========================================
+
+let scannedTemplate = null;
+
+function showScanModal() {
+  closeModal('template-modal');
+  resetScan();
+  document.getElementById('scan-modal').classList.add('active');
+}
+
+function resetScan() {
+  scannedTemplate = null;
+  document.getElementById('scan-idle').style.display = 'block';
+  document.getElementById('scan-loading').style.display = 'none';
+  document.getElementById('scan-preview').style.display = 'none';
+  document.getElementById('scan-error').style.display = 'none';
+  document.getElementById('scan-file-input').value = '';
+}
+
+function compressImage(file, maxDim = 1024, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
+        else                { width = Math.round(width * maxDim / height); height = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+async function handleScanImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  document.getElementById('scan-idle').style.display = 'none';
+  document.getElementById('scan-loading').style.display = 'block';
+
+  try {
+    const image = await compressImage(file);
+    const response = await fetch('/api/scan-workout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image, mediaType: 'image/jpeg' })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Scan failed');
+
+    scannedTemplate = data;
+    document.getElementById('scan-loading').style.display = 'none';
+    document.getElementById('scan-preview').style.display = 'block';
+    document.getElementById('scan-template-name').textContent = data.name;
+    document.getElementById('scan-exercises-list').innerHTML = data.exercises.map(ex => `
+      <div class="scan-exercise-row">
+        <span class="scan-exercise-name">${ex.name}</span>
+        <span class="scan-exercise-meta">${ex.sets} × ${ex.reps} · ${ex.restSeconds}s rest</span>
+      </div>
+    `).join('');
+  } catch (err) {
+    document.getElementById('scan-loading').style.display = 'none';
+    document.getElementById('scan-error').style.display = 'block';
+    document.getElementById('scan-error-msg').textContent = err.message || 'Could not read the workout image. Try a clearer photo.';
+  }
+}
+
+function confirmScanTemplate() {
+  if (!scannedTemplate) return;
+
+  const templateExercises = scannedTemplate.exercises.map(ex => {
+    const match = exercises.find(e => e.name.toLowerCase() === ex.name.toLowerCase());
+    let exerciseId, category;
+    if (match) {
+      exerciseId = match.id;
+      category = match.category;
+    } else {
+      exerciseId = generateId();
+      category = 'weight';
+      exercises.push({ id: exerciseId, name: ex.name, category, defaultSets: ex.sets, defaultReps: ex.reps, restTime: ex.restSeconds });
+      Storage.set('exercises', exercises);
+    }
+    return {
+      exerciseId,
+      name: ex.name,
+      category,
+      restTime: ex.restSeconds,
+      sets: Array.from({ length: ex.sets }, () => ({ reps: ex.reps, weight: 0, duration: 0, calories: 0 }))
+    };
+  });
+
+  const template = { id: generateId(), name: scannedTemplate.name, exercises: templateExercises };
+  templates.push(template);
+  Storage.set('templates', templates);
+  closeModal('scan-modal');
+  alert(`Template "${template.name}" saved!`);
+}
+
+// ==========================================
 // Modal Utilities
 // ==========================================
 

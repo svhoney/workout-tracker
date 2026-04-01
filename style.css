@@ -964,6 +964,108 @@ html, body {
   color: var(--text-secondary);
 }
 
+/* Data Section */
+.data-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--surface-light);
+}
+
+.data-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.data-actions .btn {
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* Scan Modal */
+.scan-template-btn {
+  margin-bottom: 16px;
+}
+
+.scan-hint {
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.scan-upload-btn {
+  display: block;
+  text-align: center;
+  cursor: pointer;
+}
+
+.scan-loading {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.scan-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--surface-light);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.scan-loading p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.scan-preview-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+
+.scan-exercises-list {
+  margin-bottom: 16px;
+}
+
+.scan-exercise-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--surface-light);
+}
+
+.scan-exercise-name {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.scan-exercise-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.scan-error {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.scan-error p {
+  color: var(--danger);
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 /* Rest time indicator on exercise */
 .exercise-rest-time {
   font-size: 12px;

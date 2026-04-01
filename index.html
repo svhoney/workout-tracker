@@ -95,6 +95,18 @@
                     <canvas id="progress-chart"></canvas>
                 </div>
                 <div id="progress-stats" class="stats-container"></div>
+
+                <!-- Data Management -->
+                <div class="data-section">
+                    <h3 class="section-title">Data</h3>
+                    <div class="data-actions">
+                        <button class="btn btn-secondary" onclick="exportData()">Export Backup</button>
+                        <label class="btn btn-secondary import-label">
+                            Import Backup
+                            <input type="file" id="import-file-input" accept=".json" onchange="importData(event)" style="display:none">
+                        </label>
+                    </div>
+                </div>
             </section>
         </main>
 
@@ -233,7 +245,41 @@
                     <button class="close-btn" onclick="closeModal('template-modal')">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <div id="template-list" class="exercise-list"></div>
+                        <button class="btn btn-secondary scan-template-btn" onclick="showScanModal()">&#128247; Scan Workout Image</button>
+                <div id="template-list" class="exercise-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scan Workout Modal -->
+        <div id="scan-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Scan Workout</h2>
+                    <button class="close-btn" onclick="closeModal('scan-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="scan-idle">
+                        <p class="scan-hint">Choose a photo of a workout plan to automatically import it as a template.</p>
+                        <label class="btn btn-primary scan-upload-btn">
+                            Choose Photo
+                            <input type="file" id="scan-file-input" accept="image/*" onchange="handleScanImage(event)" style="display:none">
+                        </label>
+                    </div>
+                    <div id="scan-loading" style="display:none" class="scan-loading">
+                        <div class="scan-spinner"></div>
+                        <p>Reading workout...</p>
+                    </div>
+                    <div id="scan-preview" style="display:none">
+                        <div class="scan-preview-name" id="scan-template-name"></div>
+                        <div id="scan-exercises-list" class="scan-exercises-list"></div>
+                        <button class="btn btn-primary" onclick="confirmScanTemplate()">Save as Template</button>
+                        <button class="btn btn-secondary" onclick="resetScan()">Try Again</button>
+                    </div>
+                    <div id="scan-error" style="display:none" class="scan-error">
+                        <p id="scan-error-msg"></p>
+                        <button class="btn btn-secondary" onclick="resetScan()">Try Again</button>
+                    </div>
                 </div>
             </div>
         </div>
