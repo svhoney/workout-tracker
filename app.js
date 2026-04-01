@@ -563,19 +563,18 @@ function saveAsTemplate(name) {
 }
 
 function showLoadTemplate() {
-  if (templates.length === 0) {
-    alert('No templates saved yet. Finish a workout and save it as a template.');
-    return;
-  }
-  document.getElementById('template-list').innerHTML = templates.map(t => `
-    <div class="exercise-item" onclick="loadTemplate('${t.id}')">
-      <div class="exercise-info">
-        <div class="exercise-name">${t.name}</div>
-        <div class="exercise-meta">${t.exercises.length} exercises</div>
-      </div>
-      <button class="delete-btn" onclick="event.stopPropagation(); deleteTemplate('${t.id}')">×</button>
-    </div>
-  `).join('');
+  const listHtml = templates.length === 0
+    ? '<div class="empty-state" style="padding:20px 0"><p>No templates yet — scan a workout or save one after finishing.</p></div>'
+    : templates.map(t => `
+        <div class="exercise-item" onclick="loadTemplate('${t.id}')">
+          <div class="exercise-info">
+            <div class="exercise-name">${t.name}</div>
+            <div class="exercise-meta">${t.exercises.length} exercises</div>
+          </div>
+          <button class="delete-btn" onclick="event.stopPropagation(); deleteTemplate('${t.id}')">×</button>
+        </div>
+      `).join('');
+  document.getElementById('template-list').innerHTML = listHtml;
   document.getElementById('template-modal').classList.add('active');
 }
 
