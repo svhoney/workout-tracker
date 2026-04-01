@@ -1064,9 +1064,9 @@ function populateExerciseSelect() {
     });
   });
 
-  // Clear and repopulate
+  // Clear and repopulate (sorted alphabetically)
   select.innerHTML = '<option value="">Select Exercise</option>';
-  exercisesWithData.forEach(name => {
+  [...exercisesWithData].sort((a, b) => a.localeCompare(b)).forEach(name => {
     const option = document.createElement('option');
     option.value = name;
     option.textContent = name;
@@ -1234,24 +1234,70 @@ let timerSeconds = 90;
 let timerRemaining = 90;
 let timerInterval = null;
 let timerRunning = false;
+let timerEndTime = null; // absolute timestamp when the timer will reach zero
+
+function saveTimerState() {
+  Storage.set('timerState', { timerSeconds, timerRemaining, timerRunning, timerEndTime });
+}
+
+function loadTimerState() {
+  const saved = Storage.get('timerState');
+  if (!saved) return;
+  timerSeconds = saved.timerSeconds || 90;
+  if (saved.timerRunning && saved.timerEndTime) {
+    // Timer was running when the user left — calculate how much is left
+    timerEndTime = saved.timerEndTime;
+    timerRemaining = Math.max(0, Math.round((timerEndTime - Date.now()) / 1000));
+    document.getElementById('rest-timer').classList.remove('hidden');
+    if (timerRemaining > 0) {
+      timerRunning = false; // startTimer will set this
+      startTimer();
+    } else {
+      // Timer already expired while away
+      timerRemaining = 0;
+      updateTimerDisplay();
+      updateToggleButton();
+      timerComplete();
+    }
+  } else if (!saved.timerRunning && saved.timerRemaining > 0 && saved.timerRemaining < saved.timerSeconds) {
+    // Timer was paused mid-countdown
+    timerRemaining = saved.timerRemaining;
+    document.getElementById('rest-timer').classList.remove('hidden');
+    updateTimerDisplay();
+    updateToggleButton();
+  }
+}
+
+// When the user switches back to the app, resync the countdown from the absolute end time
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && timerRunning && timerEndTime) {
+    timerRemaining = Math.max(0, Math.round((timerEndTime - Date.now()) / 1000));
+    updateTimerDisplay();
+    if (timerRemaining <= 0) {
+      timerComplete();
+    }
+  }
+});
 
 function showTimer() {
   document.getElementById('rest-timer').classList.remove('hidden');
-  resetTimerDisplay();
 }
 
 function hideTimer() {
   document.getElementById('rest-timer').classList.add('hidden');
   stopTimer();
+  Storage.set('timerState', null);
+  document.title = 'Fitness Tracker';
 }
 
 function setTimer(seconds) {
   timerSeconds = seconds;
   timerRemaining = seconds;
+  timerEndTime = null;
   stopTimer();
   updateTimerDisplay();
+  saveTimerState();
 
-  // Update active preset button
   document.querySelectorAll('.preset-btn').forEach(btn => {
     const btnSeconds = parseInt(btn.textContent.includes(':')
       ? btn.textContent.split(':')[0] * 60 + parseInt(btn.textContent.split(':')[1] || 0)
@@ -1262,9 +1308,12 @@ function setTimer(seconds) {
 
 function adjustTimer(delta) {
   timerRemaining = Math.max(0, timerRemaining + delta);
-  if (!timerRunning) {
+  if (timerRunning && timerEndTime) {
+    timerEndTime += delta * 1000;
+  } else {
     timerSeconds = timerRemaining;
   }
+  saveTimerState();
   updateTimerDisplay();
 }
 
@@ -1281,32 +1330,38 @@ function startTimer() {
     timerRemaining = timerSeconds;
   }
 
+  timerEndTime = Date.now() + timerRemaining * 1000;
   timerRunning = true;
+  saveTimerState();
   updateToggleButton();
 
+  // Request notification permission so we can alert when the app is backgrounded
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
   timerInterval = setInterval(() => {
-    timerRemaining--;
+    // Derive remaining time from the absolute end time so background throttling doesn't skew it
+    timerRemaining = Math.max(0, Math.round((timerEndTime - Date.now()) / 1000));
     updateTimerDisplay();
+    updatePageTitle();
 
     if (timerRemaining <= 0) {
       timerComplete();
     }
-  }, 1000);
+  }, 500);
 }
 
 function stopTimer() {
   timerRunning = false;
+  timerEndTime = null;
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
   }
   updateToggleButton();
-}
-
-function resetTimerDisplay() {
-  timerRemaining = timerSeconds;
-  updateTimerDisplay();
-  updateToggleButton();
+  updatePageTitle();
+  saveTimerState();
 }
 
 function updateTimerDisplay() {
@@ -1323,6 +1378,16 @@ function updateTimerDisplay() {
     display.classList.add('done');
   } else if (timerRemaining <= 10) {
     display.classList.add('warning');
+  }
+}
+
+function updatePageTitle() {
+  if (timerRunning && timerRemaining > 0) {
+    const m = Math.floor(timerRemaining / 60);
+    const s = timerRemaining % 60;
+    document.title = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} – Rest Timer`;
+  } else {
+    document.title = 'Fitness Tracker';
   }
 }
 
@@ -1343,6 +1408,7 @@ function updateToggleButton() {
 
 function timerComplete() {
   stopTimer();
+  timerRemaining = 0;
   updateTimerDisplay();
   updateToggleButton();
 
@@ -1351,12 +1417,37 @@ function timerComplete() {
     navigator.vibrate([200, 100, 200, 100, 200]);
   }
 
+  // Fire a notification if the app is in the background
+  if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+    new Notification('Rest Timer Done', {
+      body: 'Time to get back to it!',
+      icon: '/icons/icon-192.svg'
+    });
+  }
+
   // Play sound
   playTimerSound();
 }
 
+// Shared AudioContext — created on first user interaction to satisfy browser autoplay policy
+let sharedAudioContext = null;
+
+function getAudioContext() {
+  if (!sharedAudioContext) {
+    sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (sharedAudioContext.state === 'suspended') {
+    sharedAudioContext.resume();
+  }
+  return sharedAudioContext;
+}
+
+// Prime the AudioContext on the first tap anywhere in the app
+document.addEventListener('touchstart', () => getAudioContext(), { once: true });
+document.addEventListener('mousedown', () => getAudioContext(), { once: true });
+
 function playTimerSound() {
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const audioContext = getAudioContext();
 
   const playBeep = (freq, startTime, duration) => {
     const oscillator = audioContext.createOscillator();
@@ -1387,4 +1478,5 @@ function playTimerSound() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initTodayScreen();
+  loadTimerState();
 });
