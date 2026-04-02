@@ -1555,9 +1555,11 @@ function startTimer() {
   saveTimerState();
   updateToggleButton();
 
-  // Request notification permission so we can alert when the app is backgrounded
+  // Ensure notification permission is granted, then schedule via service worker
   if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+    Notification.requestPermission().then(scheduleSwNotification);
+  } else {
+    scheduleSwNotification();
   }
 
   timerInterval = setInterval(() => {
@@ -1579,9 +1581,23 @@ function stopTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
   }
+  cancelSwNotification();
   updateToggleButton();
   updatePageTitle();
   saveTimerState();
+}
+
+function scheduleSwNotification() {
+  if (!timerEndTime) return;
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: 'SCHEDULE_TIMER', endTime: timerEndTime });
+  }
+}
+
+function cancelSwNotification() {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: 'CANCEL_TIMER' });
+  }
 }
 
 function updateTimerDisplay() {
@@ -1635,14 +1651,6 @@ function timerComplete() {
   // Vibrate if supported
   if ('vibrate' in navigator) {
     navigator.vibrate([200, 100, 200, 100, 200]);
-  }
-
-  // Fire a notification if the app is in the background
-  if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification('Rest Timer Done', {
-      body: 'Time to get back to it!',
-      icon: '/icons/icon-192.svg'
-    });
   }
 
   // Play sound
