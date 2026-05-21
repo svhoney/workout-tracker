@@ -1,3 +1,8 @@
+function toTitleCase(str) {
+  if (!str) return str;
+  return str.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -63,7 +68,18 @@ Rules:
     const data = await response.json();
     const text = (data.content?.[0]?.text || '').trim();
     const jsonStr = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
-    res.json(JSON.parse(jsonStr));
+    const parsed = JSON.parse(jsonStr);
+
+    // Normalize casing: title case for workout name and all exercise names
+    parsed.name = toTitleCase(parsed.name);
+    if (Array.isArray(parsed.exercises)) {
+      parsed.exercises = parsed.exercises.map(ex => ({
+        ...ex,
+        name: toTitleCase(ex.name)
+      }));
+    }
+
+    res.json(parsed);
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to parse workout image' });
   }

@@ -30,6 +30,12 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+// Normalize to title case (e.g. "BENCH PRESS" or "bench press" → "Bench Press")
+function toTitleCase(str) {
+  if (!str) return str;
+  return str.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
 // Get today's date as string
 function getTodayString() {
   return new Date().toISOString().split('T')[0];
@@ -509,6 +515,14 @@ function startRestTimerForExercise(seconds) {
   startTimer();
 }
 
+function cancelWorkout() {
+  if (confirm('Discard this workout? All data will be lost.')) {
+    currentWorkout = null;
+    Storage.set('currentWorkout', null);
+    initTodayScreen();
+  }
+}
+
 function finishWorkout() {
   if (currentWorkout.exercises.length === 0) {
     alert('Add at least one exercise before finishing.');
@@ -933,6 +947,14 @@ function showWorkoutDetail(workoutId) {
   content.innerHTML = workoutNotesHtml + exercisesHtml;
 
   document.getElementById('workout-detail-modal').classList.add('active');
+}
+
+function deleteWorkout() {
+  if (!confirm('Delete this workout from history? This cannot be undone.')) return;
+  workouts = workouts.filter(w => w.id !== selectedWorkoutId);
+  Storage.set('workouts', workouts);
+  closeModal('workout-detail-modal');
+  initHistoryScreen();
 }
 
 function repeatWorkout() {
@@ -1388,7 +1410,7 @@ function saveEditedTemplate() {
   const templateExercises = [];
 
   rows.forEach(row => {
-    const exName = row.querySelector('.edit-ex-name').value.trim();
+    const exName = toTitleCase(row.querySelector('.edit-ex-name').value.trim());
     if (!exName) return;
     const sets = parseInt(row.querySelector('.edit-ex-sets').value) || 3;
     const reps = parseInt(row.querySelector('.edit-ex-reps').value) || 0;
